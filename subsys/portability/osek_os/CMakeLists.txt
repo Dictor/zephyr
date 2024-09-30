@@ -3,7 +3,7 @@
 
 add_library(OSEK INTERFACE)
 
-target_include_directories(CMSIS INTERFACE ${PROJECT_SOURCE_DIR}/include/zephyr/portability)
+target_include_directories(OSEK INTERFACE ${PROJECT_SOURCE_DIR}/include/zephyr/portability)
 
 zephyr_library()
 zephyr_library_sources_ifdef(
@@ -14,6 +14,7 @@ zephyr_library_sources_ifdef(
   os.c
   resource.c
   task.c
+  internal.c
 )
 
 zephyr_library_include_directories(

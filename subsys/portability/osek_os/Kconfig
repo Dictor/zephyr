@@ -1,0 +1,8 @@
+# Copyright (c) 2024 Jeonghyun Kim <kimdictor@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+config OSEK_OS
+	bool "OSEK OS API"
+	depends on INIT_STACKS
+	help
+	  This enables OSEK/VDX OS 2.2.3 API support.

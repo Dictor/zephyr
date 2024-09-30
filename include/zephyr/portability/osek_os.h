@@ -7,8 +7,31 @@
 #ifndef ZEPHYR_INCLUDE_OSEK_OS_H_
 #define ZEPHYR_INCLUDE_OSEK_OS_H_
 
+#include <zephyr/kernel.h>
+#include <zephyr/sys/slist.h>
+
+#include <stdbool.h>
+
 // TaskType identifies a task. (ch 13.2.1)
 typedef struct {
+	// zephyr thread information
+	k_tid_t id;
+
+	/*
+	k_thread_stack_t *stack;
+	size_t stack_size;
+	k_thread_entry_t entry;
+	void *p1;
+	void *p2;
+	void *p3;
+	int prio;
+	uint32_t options;
+	k_timeout_t delay;
+	*/
+
+	// OSEK property
+	bool is_extended;
+	sys_snode_t node;
 } TaskType;
 
 // TaskRefType points to a variable of TaskType. (ch 13.2.1)
@@ -22,6 +45,10 @@ typedef TaskStateType *TaskStateRefType;
 
 // ResourceType is data type for a resource.(ch 13.4.1)
 typedef struct {
+	struct k_sem *lock;
+	k_tid_t occupier;
+	int ceiling_prio;
+	sys_snode_t node;
 } ResourceType;
 
 // EventMaskType is data type of the event mask. (ch 13.5.1)
@@ -56,7 +83,8 @@ typedef struct {
 typedef unsigned char AppModeType;
 
 // OSServiceIdType represents the identification of system services. (ch 13.8.1)
-typedef struct{} OSServiceIdType;
+typedef struct {
+} OSServiceIdType;
 
 // StatusType means all status information the API services offer (ch 13.1)
 typedef enum {
@@ -68,26 +96,33 @@ typedef enum {
 	E_OS_NOFUNC = 5,
 	E_OS_RESOURCE = 6,
 	E_OS_STATE = 7,
-	E_OS_VALUE = 8
+	E_OS_VALUE = 8,
+	E_OS_SYS = 9
 } StatusType;
 
 // (ch 13.2.4)
-const TaskStateType RUNNING;
-const TaskStateType WATING;
-const TaskStateType READY;
-const TaskStateType SUSPENDED;
-const TaskType INVALID_TASK;
+extern const TaskStateType RUNNING;
+extern const TaskStateType WAITING;
+extern const TaskStateType READY;
+extern const TaskStateType SUSPENDED;
+extern const TaskType INVALID_TASK;
 
 // (ch 13.4.4)
-const ResourceType RES_SCHEDULER;
+extern const ResourceType RES_SCHEDULER;
 
 // (ch 13.6.4)
-const TickType OSMAXALLOWEDVALUE;
-const TickType OSTICKSPERBASE;
-const TickType OSMINCYCLE;
+extern const TickType OSMAXALLOWEDVALUE;
+extern const TickType OSTICKSPERBASE;
+extern const TickType OSMINCYCLE;
 
 // (ch 13.7.3)
-const AppModeType OSDEFAULTAPPMODE;
+extern const AppModeType OSDEFAULTAPPMODE;
+
+// (ch.13.2.2.1)
+#define DeclareTask(TaskIdentifier) extern TaskType osek_##TaskIdentifier
+
+#define OSEK_TASK_DEFINE(zephyr_task_name, is_extend) TaskType osek_##zephyr_task_name = {zephyr_task_name, is_extend}
+#define OSEK_TASK(zephyr_task_name) osek_##zephyr_task_name
 
 // (ch 13.2.3.1)
 StatusType ActivateTask(TaskType TaskID);
@@ -125,11 +160,17 @@ void ResumeOSInterrupts(void);
 // (ch 13.3.2.6)
 void SuspendOSInterrupts(void);
 
+// (ch 13.4.2.1)
+#define DeclareResource(ResourceIdentifier) (ResourceIdentifier)
+
 // (ch 13.4.3.1)
 StatusType GetResource(ResourceType ResID);
 
 // (ch 13.4.3.2)
 StatusType ReleaseResource(ResourceType ResID);
+
+// (ch 13.5.2.1)
+#define DeclareEvent(EventIdentifier) (EventIdentifier)
 
 // (ch 13.5.3.1)
 StatusType SetEvent(TaskType TaskID, EventMaskType Mask);
@@ -142,6 +183,9 @@ StatusType GetEvent(TaskType TaskID, EventMaskRefType Event);
 
 // (ch 13.5.3.4)
 StatusType WaitEvent(EventMaskType Mask);
+
+// (ch 13.6.2.1)
+#define DeclareAlarm(AlarmIdentifier) (AlarmIdentifier)
 
 // (ch 13.6.3.1)
 StatusType GetAlarmBase(AlarmType AlarmID, AlarmBaseRefType Info);
@@ -181,5 +225,7 @@ extern void StartupHook(void);
 
 // (ch 13.8.2.5)
 extern void ShutdownHook(StatusType Error);
+
+extern void RegisterOsekTask(TaskRefType TaskRef);
 
 #endif
